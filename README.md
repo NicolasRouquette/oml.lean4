@@ -4,6 +4,14 @@ This repository is about experiments about specifying the [Ontological Modeling 
 
 The inspiration for this experiment stems from the following discussion on the [Lean4 discord topic about OO polymorphism](https://leanprover.zulipchat.com/#narrow/stream/270676-lean4/topic/OO.20polymorphism.3F), which inspired the following article by [Juan Pablo Romero](https://typista.org/subtyping-and-polymorphism-in-lean/).
 
+## How to work with this repository?
+
+- Follow the [Lean Manual Quickstart](https://leanprover.github.io/lean4/doc/quickstart.html) to setup a VS-Code IDE with the Lean extension
+
+- Clone this repository
+
+- Open the clone in VS Code (assuming the Lean4 extension is installed).
+
 ## Examples from the OO polymorphism discussion
 
 - [src/Oml/O1.lean: Jason Rute's proposal](src/Oml/O1.lean)
