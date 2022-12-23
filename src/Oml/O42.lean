@@ -6,8 +6,6 @@ inductive Geo_Type
 | Point3D
 deriving Repr, DecidableEq
 
-open Geo_Type
-
 structure Slots_Point2D where
   (x y : Float)
   deriving Repr
@@ -48,6 +46,8 @@ structure Obj (t : Geo_Type) where
   ty : Geo_Type
   sub : Geo_Type.supertype t ty
   slots : ty.Slots
+
+open Geo_Type
 
 instance : Coe Slots_Point2D (Obj Point2D) where coe s := ⟨Point2D, rfl, s⟩
 instance : Coe Slots_Point3D (Obj Point3D) where coe s := ⟨Point3D, rfl, s⟩
