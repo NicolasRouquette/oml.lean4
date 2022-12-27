@@ -1,9 +1,11 @@
-import Oml.Oml3
+import Oml.Syntax
 
-/-- This is a subset of https://github.com/opencaesar/imce-vocabularies -/
-namespace test3
+/-
+ - This is a subset of https://github.com/opencaesar/imce-vocabularies
+ -/
+namespace testSyntax
 
-open Oml3
+open Syntax
 
 def rdfs : «Vocabulary» := {
   «namespace» := "http://www.w3.org/2000/01/rdf-schema#"
@@ -82,10 +84,10 @@ def mission : «Vocabulary» := {
   ]
 }
 
-#eval rdfs
+#eval Lean.toJson rdfs
 #eval xsd
 #eval base
 #eval mission
 
 
-end test3
+end testSyntax

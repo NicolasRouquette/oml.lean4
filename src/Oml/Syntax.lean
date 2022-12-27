@@ -1,6 +1,6 @@
 import Lean.Data.Json
 
-namespace Oml3
+namespace Syntax
 
 instance : Lean.ToJson UInt8 := ⟨fun n => Lean.Json.num n.val⟩
 
@@ -27,7 +27,7 @@ instance : Lean.FromJson UInt32 := ⟨fun j => match Lean.Json.getInt? j with
 structure «Ontology» where
   «namespace» : String
   «prefix»: String
-  deriving Repr, Lean.FromJson, Lean.ToJson
+  deriving Hashable, Repr, Lean.FromJson, Lean.ToJson
 
 abbrev «AbbrevIRI» := (Option String) × String
 
@@ -212,6 +212,8 @@ class «Vocabulary» extends «Ontology» where
   «ownedStatements»: List «VocabularyStatement» := List.nil
   deriving Repr, Lean.FromJson, Lean.ToJson
 
+instance : Hashable «Vocabulary» where
+  hash v := hash v.toOntology
 
 inductive «VocabularyBundleImportKind» where
   | vocabularyBundleExtension
@@ -247,4 +249,4 @@ class «DescriptionBundleImport» where
   «importedPrefix»: String
   deriving Repr, Lean.FromJson, Lean.ToJson
 
-end Oml3
+end Syntax

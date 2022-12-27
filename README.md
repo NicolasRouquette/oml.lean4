@@ -24,6 +24,41 @@ The inspiration for this experiment stems from the following discussion on the [
 
 - [src/Oml/O41.lean: A variant of Kyle Miller's proposal using a suggestion from Yaël Dillies](src/Oml/O41.lean)
 
+  The noteworthy difference is in the definition of `toRepr`:
+
+  In [src/Oml/O4.lean](src/Oml/O4.lean), it is defined as a Lean expression:
+
+  ```lean
+    def toRepr : (T : Geo_Type) → Repr T.Slots
+    | Point2D => instReprSlots_Point2D
+    | Point3D => instReprSlots_Point3D
+    | Point4D => instReprSlots_Point4D
+    | Square2D => instReprSlots_Square2D
+  ```
+
+  In [src/Oml/O41.lean](src/Oml/O41.lean), it is defined as a Lean proof:
+
+  ```lean
+  def toRepr : (T : Geo_Type) → Repr T.Slots := 
+  by {
+    intro T;
+    cases T <;> 
+    unfold Geo_Type.Slots <;> 
+    simp <;>
+    infer_instance
+  }
+  ```
+
+  Either definition has a computational utility, see:
+
+  ```lean
+  instance : Repr (Obj (T : Geo_Type)) where
+    reprPrec o _ := ((instReprGeo_Type.reprPrec o.ty 1).append (Std.Format.text " ")).append ((toRepr o.ty).reprPrec o.slots 1)
+  ```
+
+- [src/Oml/O42.lean: A succinct variant focused on the prrof-based definition of `toRepr`](src/Oml/O42.lean)
+
+
 - [src/Oml/O5.lean: Mario Carneiro's 2nd proposal](src/Oml/O5.lean)
 
 ## How do we specify an [XCore](https://wiki.eclipse.org/Xcore) metamodel in Lean?
@@ -142,7 +177,7 @@ The class diagram notation involves notable peculiarities:
 
 ## Summary of simplified OML metamodel encodings.
 
-- [src/Oml/Oml1.lean](src/Oml/Oml1.lean), [src/Oml/Oml2.lean](src/Oml/Oml2.lean)
+### [src/Oml/Oml1.lean](src/Oml/Oml1.lean), [src/Oml/Oml2.lean](src/Oml/Oml2.lean)
 
   These experiments began with the full OML metamodel with a simple encoding strategy:
 
@@ -167,3 +202,9 @@ The class diagram notation involves notable peculiarities:
     Lean's collection library does not behave like Java's or Scala's OO collection library.
 
   To address these issues, it is necessary to switch from a structure/class encoding to a strategy like [Mario Carneiro's 2nd proposal](src/Oml/O5.lean) or to define a layer of modeling infrastructure to keep track of object's metaclasses using a type class technique for modeling polymorphism as [Kyle Miller suggested](src/Oml/O4.lean). Kyle's suggestion reflects the paradigm described in the [Functional Programming in Lean book, section 4.2](https://leanprover.github.io/functional_programming_in_lean/type-classes/polymorphism.html) albeit the book lacks a clear example of polymorphic subtyping.
+
+### `./Oml/{`[Syntax.lean](src/Oml/Syntax.lean), [Resolver.lean](src/Oml/Resolver.lean)`}`
+
+[Syntax.lean](src/Oml/Syntax.lean) defines the AST of a subset of Lean, currently, vocabularies.
+
+[Resolver.lean](src/Oml/Resolver.lean) defines the OML-specific resolution mapping OML AST to an intermediate representation; which involves validating the AST input for well-formedness.
