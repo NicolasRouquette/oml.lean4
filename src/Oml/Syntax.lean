@@ -132,11 +132,15 @@ inductive «EntityKind» where
     («specializations»: List «AbbrevIRI» := List.nil)
   deriving Repr, Lean.FromJson, Lean.ToJson
 
+export «EntityKind» (aspect concept relation)
+
 inductive «Entity» where
  | «declaration» («name»: String) («kind»: «EntityKind»)
  | «reference» («abbrevIRI»: «AbbrevIRI») («kind»: «EntityKind»)
   deriving Repr, Lean.FromJson, Lean.ToJson
   
+export «Entity» («declaration» «reference»)
+
 inductive «ScalarKind» where
   | faceted
     («length»: Option UInt8 := none)
