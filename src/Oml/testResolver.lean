@@ -29,12 +29,22 @@ def s1 : State := match r1a with | EStateM.Result.ok s _ => s | _ => {}
 #eval s1
 
 -- This resolves all vocabulary entity declarations from the state resulting from r1a.
-def r1b : EStateM.Result Exception State State := validateVocabularyEntityDeclarations |>.run c1 |>.run s1
+def r1b : EStateM.Result Exception State State := validateVocabularyStatementDeclarations |>.run c1 |>.run s1
 #eval r1b
 
 -- This resolves all vocabulary declarations and their vocabulary entity declarations.
-def r1b' : EStateM.Result Exception State State := validateVocabularyEntityDeclarations' |>.run c1 |>.run s0
+def r1b' : EStateM.Result Exception State State := validateVocabularyStatementDeclarations' |>.run c1 |>.run s0
 #eval r1b'
 
+def s2 : State := match r1b with | EStateM.Result.ok s _ => s | _ => {}
+#eval s2
+
+-- This resolves all vocabulary specializations from the state resulting from r1b.
+def r1c : EStateM.Result Exception State State := validateVocabularySpecializations |>.run c1 |>.run s2
+#eval r1c
+
+-- This resolves all vocabulary declarations, their vocabulary entity declarations and their specializations.
+def r1c' : EStateM.Result Exception State State := validateVocabularySpecializations' |>.run c1 |>.run s0
+#eval r1c'
 
 end testResolver

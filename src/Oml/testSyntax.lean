@@ -19,7 +19,7 @@ def xsd : «Vocabulary» := {
   «namespace» := "http://www.w3.org/2001/XMLSchema#"
   «prefix» := "xsd"
   ownedStatements := [
-    VocabularyStatement.scalar (Scalar.declaration "string" (ScalarKind.faceted («specializations» := [ (some "rdfs", "Literal")])))
+    VocabularyStatement.scalar (Scalar.declaration "string" (ScalarKind.faceted («specialization» := some (some "rdfs", "Literal"))))
   ]
 }
 
@@ -84,9 +84,12 @@ def mission : «Vocabulary» := {
   ]
 }
 
+#eval rdfs
 #eval Lean.toJson rdfs
 #eval xsd
+#eval Lean.toJson xsd
 #eval base
+#eval Lean.toJson base
 #eval mission
 
 

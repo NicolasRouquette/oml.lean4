@@ -1,28 +1,7 @@
 import Lean.Data.Json
+import Oml.Instances
 
 namespace Syntax
-
-instance : Lean.ToJson UInt8 := ⟨fun n => Lean.Json.num n.val⟩
-
-instance : Lean.FromJson UInt8 := ⟨fun j => match Lean.Json.getInt? j with
-| Except.error e => 
-  throw e
-| Except.ok i => 
-  if h : i.toNat < UInt8.size then 
-    return UInt8.ofNatCore i.toNat h 
-  else 
-    throw "Natural number less than 256 expected"⟩
-
-instance : Lean.ToJson UInt32 := ⟨fun n => Lean.Json.num n.val⟩
-
-instance : Lean.FromJson UInt32 := ⟨fun j => match Lean.Json.getInt? j with
-| Except.error e => 
-  throw e
-| Except.ok i => 
-  if h : i.toNat < UInt32.size then 
-    return UInt32.ofNatCore i.toNat h 
-  else 
-    throw "Natural number less than 256 expected"⟩
 
 structure «Ontology» where
   «namespace» : String
@@ -132,6 +111,24 @@ inductive «EntityKind» where
     («specializations»: List «AbbrevIRI» := List.nil)
   deriving Repr, Lean.FromJson, Lean.ToJson
 
+def «EntityKind».«propertyRestrictions» (e: «EntityKind»): List «PropertyRestrictionAxiom» :=
+  match e with
+  | .aspect p _ _ => p
+  | .concept p _ _ => p
+  | .relation _ _ _ _ _ _ _ _ _ _ p _ _ => p
+
+def «EntityKind».«relationRestrictions» (e: «EntityKind»): List «RelationRestrictionAxiom» :=
+  match e with
+  | .aspect _ r _ => r
+  | .concept _ r _ => r
+  | .relation _ _ _ _ _ _ _ _ _ _ _ r _ => r
+
+def «EntityKind».«specializations» (e: «EntityKind»): List «AbbrevIRI» :=
+  match e with
+  | .aspect _ _ s => s
+  | .concept _ _ s => s
+  | .relation _ _ _ _ _ _ _ _ _ _ _ _ s => s
+
 export «EntityKind» (aspect concept relation)
 
 inductive «Entity» where
@@ -139,6 +136,21 @@ inductive «Entity» where
  | «reference» («abbrevIRI»: «AbbrevIRI») («kind»: «EntityKind»)
   deriving Repr, Lean.FromJson, Lean.ToJson
   
+def «Entity».«propertyRestrictions» (e: «Entity»): List «PropertyRestrictionAxiom» :=
+  match e with
+  | .«declaration» _ k  => k.«propertyRestrictions»
+  | .«reference» _ k    => k.«propertyRestrictions»
+    
+def «Entity».«relationRestrictions» (e: «Entity»): List «RelationRestrictionAxiom» :=
+  match e with
+  | .«declaration» _ k  => k.«relationRestrictions»
+  | .«reference» _ k    => k.«relationRestrictions»
+
+def «Entity».«specializations» (e: «Entity»): List «AbbrevIRI» :=
+  match e with
+  | .«declaration» _ k  => k.«specializations»
+  | .«reference» _ k    => k.«specializations»
+
 export «Entity» («declaration» «reference»)
 
 inductive «ScalarKind» where
@@ -152,16 +164,47 @@ inductive «ScalarKind» where
     («minExclusive»: Option «Literal» := none)
     («maxInclusive»: Option «Literal» := none)
     («maxExclusive»: Option «Literal» := none)
-    («specializations»: List «AbbrevIRI» := List.nil)
+    («specialization»: Option «AbbrevIRI» := none)
   | enumerated
     («literals»: List «Literal» := List.nil)
-    («specializations»: List «AbbrevIRI» := List.nil)
+    («specialization»: Option «AbbrevIRI» := none)
   deriving Repr, Lean.FromJson, Lean.ToJson
+
+def «ScalarKind».«specialization» (sk: «ScalarKind»): Option «AbbrevIRI» := 
+  match sk with
+  | .faceted _ _ _ _ _ _ _ _ _ s  => s
+  | .enumerated _ s               => s
 
 inductive «Scalar» where
  | «declaration» («name»: String) («kind»: «ScalarKind»)
  | «reference» («abbrevIRI»: «AbbrevIRI») («kind»: «ScalarKind»)
   deriving Repr, Lean.FromJson, Lean.ToJson
+
+def «Scalar».«specialization» (sc: «Scalar»): Option «AbbrevIRI» :=
+  match sc with
+  | .«declaration» _ sk => sk.«specialization»
+  | .«reference» _ sk   => sk.«specialization»
+  
+inductive «Structure» where
+ | «declaration»
+    («name»: String) 
+    («propertyRestrictions» : List «PropertyRestrictionAxiom» := List.nil)
+    («specializations»: List «AbbrevIRI» := List.nil)
+ | «reference» 
+    («abbrevIRI»: «AbbrevIRI»)
+    («propertyRestrictions» : List «PropertyRestrictionAxiom» := List.nil)
+    («specializations»: List «AbbrevIRI» := List.nil)
+  deriving Repr, Lean.FromJson, Lean.ToJson
+
+def «Structure».«propertyRestrictions» (s: «Structure»): List «PropertyRestrictionAxiom» :=
+  match s with
+  | .«declaration» _ p _  => p
+  | .«reference» _ p _    => p
+
+def «Structure».«specializations» (s: «Structure»): List «AbbrevIRI» :=
+  match s with
+  | .«declaration» _ _ s  => s
+  | .«reference» _ _ s    => s
 
 inductive «SemanticPropertyKind» where
   | scalar
@@ -169,6 +212,11 @@ inductive «SemanticPropertyKind» where
   | structured
     («specializations»: List «AbbrevIRI» := List.nil)
   deriving Repr, Lean.FromJson, Lean.ToJson
+
+def «SemanticPropertyKind».«specializations» (spk: «SemanticPropertyKind»): List «AbbrevIRI» :=
+  match spk with
+  | .scalar s     => s
+  | .structured s => s
 
 inductive «SemanticProperty» where
  | «declaration» 
@@ -181,6 +229,15 @@ inductive «SemanticProperty» where
     («kind»: «SemanticPropertyKind»)
     («abbrevIRI»: «AbbrevIRI») 
   deriving Repr, Lean.FromJson, Lean.ToJson
+
+
+def «SemanticProperty».«kind» (sp: «SemanticProperty»): «SemanticPropertyKind» :=
+  match sp with
+  | .«declaration» spk _ _ _ _  => spk
+  | .«reference» spk _          => spk
+
+def «SemanticProperty».«specializations» (sp: «SemanticProperty»): List «AbbrevIRI» :=
+  sp.«kind».«specializations»
 
 inductive «Predicate» where
   | «type» («variable»: String) («type»: «AbbrevIRI»)
@@ -196,6 +253,7 @@ inductive «Predicate» where
   deriving Repr, Lean.FromJson, Lean.ToJson
 
 class «Rule» where
+  «name»: String
   «antecedents»: List «Predicate»
   «consequents»: List «Predicate»
   deriving Repr, Lean.FromJson, Lean.ToJson
@@ -204,9 +262,7 @@ inductive «VocabularyStatement» where
   | «rule» (r: «Rule»)
   | «entity» (e: «Entity»)
   | «scalar» (s: «Scalar»)
-  | «structure» 
-    («name»: String)
-    («propertyRestrictions» : List «PropertyRestrictionAxiom» := List.nil)
+  | «structure» (s: «Structure»)
   | «annotationProperty» («name»: String)
   | «semanticProperty» (p: «SemanticProperty»)
   deriving Repr, Lean.FromJson, Lean.ToJson
