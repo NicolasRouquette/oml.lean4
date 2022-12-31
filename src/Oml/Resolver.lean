@@ -112,12 +112,19 @@ abbrev M'    := ReaderT Context <| MCore
 abbrev M''   := ReaderT Context <| ExceptT Exception <| StateM State
 #print M''
 
+def EStateM.Result.getState (r: EStateM.Result Exception State α): State :=
+  match r with
+  | EStateM.Result.ok _ s => s 
+  | _ => {}
+
+export EStateM.Result (getState)
+
 def State.appendSpecializations
   (d: RDeclaration) (dts: List RDeclarationType)
   (ds: List RDeclaration)
   (coll: State → Lean.HashMap RDeclaration RDeclarations)
   (update: State → RDeclaration → RDeclarations → State)
-  : M State := do
+  : M Unit := do
   let s ← get
   match s.declarations.find? d with
   | some k =>
@@ -125,7 +132,8 @@ def State.appendSpecializations
       let rds := (coll s).findD d .empty
       let merged : RDeclarations := ds.foldl .insert rds
       let s' : State := update s d merged
-      pure s'
+      set s'
+      pure ()
     else
       throw (Exception.error s!"Error: appendSpecializations: {repr d} is registered as a {repr k.type}, not one of {repr dts}.")
   | none =>
@@ -149,43 +157,47 @@ def State.updateScalarPropertySpecializations (s: State) (d: RDeclaration) (ds: 
 def State.updateStructuredPropertySpecializations (s: State) (d: RDeclaration) (ds: RDeclarations): State :=
 { s with structuredPropertySpecializations := s.structuredPropertySpecializations.insert d ds }
 
-def State.appendAspectSpecializations (a: RDeclaration) (as: List RDeclaration): M State := do
+def State.appendAspectSpecializations (a: RDeclaration) (as: List RDeclaration): M Unit := do
   appendSpecializations a [ .Aspect ] as State.aspectSpecializations State.updateAspectSpecializations
 
-def State.appendConceptSpecializations (c: RDeclaration) (cs: List RDeclaration): M State := do
+def State.appendConceptSpecializations (c: RDeclaration) (cs: List RDeclaration): M Unit := do
   appendSpecializations c [ .Aspect, .Concept ] cs State.conceptSpecializations State.updateConceptSpecializations
 
-def State.appendRelationSpecializations (r: RDeclaration) (rs: List RDeclaration): M State := do
+def State.appendRelationSpecializations (r: RDeclaration) (rs: List RDeclaration): M Unit := do
   appendSpecializations r [ .Aspect, .Relation ] rs State.relationSpecializations State.updateRelationSpecializations
 
-def State.appendStructureSpecializations (s: RDeclaration) (ss: List RDeclaration): M State := do
+def State.appendStructureSpecializations (s: RDeclaration) (ss: List RDeclaration): M Unit := do
   appendSpecializations s [ .Structure ] ss State.structureSpecializations State.updateStructureSpecializations
 
-def State.appendScalarPropertySpecializations (s: RDeclaration) (ss: List RDeclaration): M State := do
+def State.appendScalarPropertySpecializations (s: RDeclaration) (ss: List RDeclaration): M Unit := do
   appendSpecializations s [ .ScalarProperty ] ss State.scalarPropertySpecializations State.updateScalarPropertySpecializations
 
-def State.appendStructuredPropertySpecializations (s: RDeclaration) (ss: List RDeclaration): M State := do
+def State.appendStructuredPropertySpecializations (s: RDeclaration) (ss: List RDeclaration): M Unit := do
   appendSpecializations s [ .StructuredProperty ] ss State.structuredPropertySpecializations State.updateStructuredPropertySpecializations
 
 /-- The set of all vocabularies must have unique combinations of prefixes and namespaces. -/
 
-def validateVocabularyDeclaration (s: State) (v: Syntax.«Vocabulary»): M State := do
+def validateVocabularyDeclaration (v: Syntax.«Vocabulary»): M Unit := do
+  let s ← get
   match (s.byPrefix.contains v.prefix, s.byNamespace.contains v.namespace) with
   | (false, false) =>
-    pure { s with 
+    set { s with 
       byPrefix := s.byPrefix.insert v.prefix v.toOntology, 
       byNamespace := s.byNamespace.insert v.namespace v.toOntology }
+    pure ()
   | (p, n) =>
     let pm := if p then s!"Error: multiple vocabularies with the same prefix: {v.prefix}" else ""
     let nm := if n then s!"Error: multiple vocabularies with the same namespace: {v.namespace}" else ""
     throw (Exception.error s!"{pm}\n{nm}")
   
-def validateVocabularyDeclarations: M State := do
-  (← read).vocabularies.foldlM validateVocabularyDeclaration (← get)
+def validateVocabularyDeclarations: M Unit := do
+  for x in (← read).vocabularies do
+    validateVocabularyDeclaration x
 
 /-- Vocabulary statements must declare unique combinations of names within a given namespace prefix. -/
 
-def validateStatementDeclaration (p: String) (s: State) (vs: Syntax.VocabularyStatement): M State := do
+def validateStatementDeclaration (p: String) (vs: Syntax.VocabularyStatement): M Unit := do
+  let s ← get
   match vs with 
   | .entity e =>
     let ((od: Option RDeclaration), (ok: Option RDeclarationKind), (of: Option String), (or: Option String)) := match e with
@@ -224,9 +236,10 @@ def validateStatementDeclaration (p: String) (s: State) (vs: Syntax.VocabularySt
                   throw (Exception.error s!"Error: entity declaration: {Lean.toJson rd} was resolved as a {Lean.toJson rdk} but there is a conflicting or duplicate declaration as a Reverse Property.")
                 | none =>
                   pure { s with declarations := s.declarations.insert rd RDeclarationKind.rReverseProperty }                  
-          return s
+          set s
+          pure ()
       | _ =>   
-        return s
+        pure ()
   | .scalar sc =>
     match sc with
       | .«declaration» n k =>
@@ -237,11 +250,13 @@ def validateStatementDeclaration (p: String) (s: State) (vs: Syntax.VocabularySt
         | none =>
           match k with
           | Syntax.«ScalarKind».faceted len minL maxL pat lang _ _ _ _ _ =>
-            return { s with declarations := s.declarations.insert d (RDeclarationKind.rFacetedScalar len minL maxL pat lang) }
+            set { s with declarations := s.declarations.insert d (RDeclarationKind.rFacetedScalar len minL maxL pat lang) }
+            pure ()
           | Syntax.«ScalarKind».enumerated _ _ =>
-            return { s with declarations := s.declarations.insert d RDeclarationKind.rEnumeratedScalar }
+            set { s with declarations := s.declarations.insert d RDeclarationKind.rEnumeratedScalar }
+            pure ()
       | _ =>
-        return s
+        pure ()
   | .structure st =>
     match st with
       | .«declaration» n _ =>
@@ -250,16 +265,18 @@ def validateStatementDeclaration (p: String) (s: State) (vs: Syntax.VocabularySt
         | some dk =>
           throw (Exception.error s!"Error: entity declaration: {Lean.toJson d} was resolved as a {Lean.toJson dk} but there is a conflicting or duplicate declaration as a Structure.")
         | none =>
-          return { s with declarations := s.declarations.insert d RDeclarationKind.rStructure }
+          set { s with declarations := s.declarations.insert d RDeclarationKind.rStructure }
+          pure ()
       | _ =>
-        return s
+        pure ()
   | .annotationProperty ap =>
     let d := RDeclaration.mk (name := ap) («prefix» := p)
     match s.declarations.find? d with
       | some dk =>
         throw (Exception.error s!"Error: entity declaration: {Lean.toJson d} was resolved as a {Lean.toJson dk} but there is a conflicting or duplicate declaration as an AnnotationProperty.")
       | none =>
-        return { s with declarations := s.declarations.insert d RDeclarationKind.rAnnotationProperty }
+        set { s with declarations := s.declarations.insert d RDeclarationKind.rAnnotationProperty }
+        pure ()
   | .semanticProperty sp =>
     match sp with
       | .«declaration» sk sn _ _ isFunc =>
@@ -270,30 +287,34 @@ def validateStatementDeclaration (p: String) (s: State) (vs: Syntax.VocabularySt
               | some dk =>
                 throw (Exception.error s!"Error: entity declaration: {Lean.toJson d} was resolved as a {Lean.toJson dk} but there is a conflicting or duplicate declaration as an ScalarProperty.")
               | none =>
-                return { s with declarations := s.declarations.insert d (RDeclarationKind.rScalarProperty isFunc) }
+                set { s with declarations := s.declarations.insert d (RDeclarationKind.rScalarProperty isFunc) }
+                pure ()
           | .structured _ =>
             match s.declarations.find? d with
               | some dk =>
                 throw (Exception.error s!"Error: entity declaration: {Lean.toJson d} was resolved as a {Lean.toJson dk} but there is a conflicting or duplicate declaration as an StructuredProperty.")
               | none =>
-                return { s with declarations := s.declarations.insert d (RDeclarationKind.rStructuredProperty isFunc) }
+                set { s with declarations := s.declarations.insert d (RDeclarationKind.rStructuredProperty isFunc) }
+                pure ()
       | _ =>
-        return s
+        pure ()
   | _ =>
-    return s
+    pure ()
 
-def validateStatementDeclarationsIn (s: State) (v: Syntax.«Vocabulary»): M State := do
-  if s.byPrefix.contains v.prefix then
-    v.ownedStatements.foldlM (validateStatementDeclaration v.prefix) s
+def validateStatementDeclarationsIn (v: Syntax.«Vocabulary»): M Unit := do
+  if (← get).byPrefix.contains v.prefix then
+    for s in v.ownedStatements do
+      validateStatementDeclaration v.prefix s
   else
-    pure s
+    pure ()
 
-def validateVocabularyStatementDeclarations: M State := do
-  (← read).vocabularies.foldlM validateStatementDeclarationsIn (← get)
+def validateVocabularyStatementDeclarations: M Unit := do
+  for v in (← read).vocabularies do
+    validateStatementDeclarationsIn v
 
-def validateVocabularyStatementDeclarations': M State := do
-  let c: Context ← read
-  validateVocabularyDeclarations >>= (fun s => c.vocabularies.foldlM validateStatementDeclarationsIn s)
+def validateVocabularyStatementDeclarations': M Unit := do
+  validateVocabularyDeclarations
+  validateVocabularyStatementDeclarations
 
 /-- Validation of specialization axioms -/
 def abbrevDeclatation (p: String) (a: Syntax.AbbrevIRI): M RDeclaration := do
@@ -388,7 +409,7 @@ def getCompatibleKinds (t: RDeclarationType): List RDeclarationType :=
   | .Relation => [ .Aspect, .Relation ]
   | x => [ x ]
 
-def validateVocabularySpecialization (p: String) (s: State) (vs: Syntax.VocabularyStatement): M State := do
+def validateVocabularySpecialization (p: String) (vs: Syntax.VocabularyStatement): M Unit := do
   match vs with 
   | .entity e =>
     let rdk : RDeclaration × RDeclarationKind ← resolveEntity p e
@@ -402,22 +423,23 @@ def validateVocabularySpecialization (p: String) (s: State) (vs: Syntax.Vocabula
     | .Relation =>
       State.appendRelationSpecializations rdk.fst rs
     | _ =>
-      pure (← get)
+      pure ()
   | .scalar sc =>
     let rdk : RDeclaration × RDeclarationKind ← resolveScalar p sc
     match sc.«specialization» with
     | none =>
-      pure (← get)
+      pure ()
     | some ab =>
       let s ← get
       let ar ← resolveAbbrev p ab
       if ar.snd == rdk.snd then
         match s.scalarSpecializations.find? rdk.fst with
         | none =>
-          pure { s with scalarSpecializations := s.scalarSpecializations.insert rdk.fst ar.fst }
+          set { s with scalarSpecializations := s.scalarSpecializations.insert rdk.fst ar.fst }
+          pure ()
         | some ss =>
           if ss == ar.fst then
-            pure s
+            pure ()
           else
             throw (Exception.error s!"Error: conflicting specialization of Scalar: {repr rdk.fst} as {repr ss} vs. {repr ar.fst}.")
       else
@@ -436,24 +458,32 @@ def validateVocabularySpecialization (p: String) (s: State) (vs: Syntax.Vocabula
       State.appendScalarPropertySpecializations rdk.fst rs
     | .structured _ =>
       State.appendStructuredPropertySpecializations rdk.fst rs
-    pure (← get)
+    pure ()
   | _ =>
-    pure (← get)
+    pure ()
   
-def validateVocabularySpecializationsIn (s: State) (v: Syntax.«Vocabulary»): M State := do
-  if s.byPrefix.contains v.prefix then
-    v.ownedStatements.foldlM (validateVocabularySpecialization v.prefix) s
+def validateVocabularySpecializationsIn (v: Syntax.«Vocabulary»): M Unit := do
+  if (← get).byPrefix.contains v.prefix then
+    for s in v.ownedStatements do 
+      validateVocabularySpecialization v.prefix s
   else
-    pure s
+    pure ()
 
-def validateVocabularySpecializations: M State := do
-  (← read).vocabularies.foldlM validateVocabularySpecializationsIn (← get)
+def validateVocabularySpecializations: M Unit := do
+  for v in (← read).vocabularies do
+    validateVocabularySpecializationsIn v
   
-def validateVocabularySpecializations': M State := do
+def validateVocabularySpecializations': M Unit := do
   let c: Context ← read
-  validateVocabularyDeclarations 
-  >>= (fun s => c.vocabularies.foldlM validateStatementDeclarationsIn s) >>= (fun s => c.vocabularies.foldlM validateVocabularySpecializationsIn s)
+  validateVocabularyDeclarations
+  for v in c.vocabularies do
+    validateStatementDeclarationsIn v
+  for v in c.vocabularies do
+    validateVocabularySpecializationsIn v
   
-
+def validateVocabularySpecializations'': M Unit := do
+  validateVocabularyDeclarations
+  validateVocabularyStatementDeclarations
+  validateVocabularySpecializations
 
 end Resolver
