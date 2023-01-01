@@ -7,7 +7,7 @@ instance [BEq α] [Hashable α] [Repr α]: Repr (Lean.HashSet α) where
 instance [BEq α] [Hashable α] [Repr (α × β)]: Repr (Lean.HashMap α β) where
   reprPrec h n := h.toList.repr n
 
-namespace MWE
+namespace MWE1
 
 inductive «Entity» where
   | aspect
@@ -184,4 +184,4 @@ theorem AllConceptSpecializationsValuesAreDeclared (s: State) :
     s.declarations.find? sup == some .rAspect || s.declarations.find? sup == some .rConcept 
 := by
     sorry
-end MWE
+end MWE1

@@ -2,6 +2,8 @@ import Lake
 import Lake.DSL
 open System Lake DSL
 
+require std4 from git "https://github.com/leanprover/std4.git"
+
 package «oml» where
   -- add package configuration options here
   srcDir := "src"
