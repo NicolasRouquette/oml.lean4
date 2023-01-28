@@ -84,7 +84,10 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
           apply tail_ih
     . case neg h =>
       simp [addBoth, addDecl] at tail_ih
-      sorry
+      let ⟨ x, hx, he ⟩ := tail_ih
+      simp_all
+      simp [he]
+      done
 
 theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sub
@@ -112,7 +115,7 @@ theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings)
           apply tail_ih
     . case neg h =>
       simp [addBoth, addDecl] at tail_ih
-      sorry
+      done
 
 theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sup
@@ -127,18 +130,16 @@ theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings)
     simp [addDecl, cond_eq_ite]
     by_cases key = sup <;> simp_all
     . case pos h1 =>
-      simp [addSubSup, cond_eq_ite] at tail_ih
-      sorry
+      simp [addSubSup, cond_eq_ite] at tail_ih ⊢ 
+      by_cases sup = sub <;> simp_all
     . case neg h1 =>
-      simp_all 
-      by_cases sub = sup
-      . case pos h2 =>
-        simp_all
-        sorry
-      . case neg h2 =>
-        simp [addSubSup, cond_eq_ite, h2]
-        simp_all
-        sorry
+      let ⟨ x, hx, he ⟩ := tail_ih
+      split <;> simp_all
+      . case h_1 y heq =>
+        done
+      . case h_2 y heq =>
+        simp [h1, cond_eq_ite, h1] at heq
+        done
 
 theorem addBoth.sup_beq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sup
@@ -153,17 +154,14 @@ theorem addBoth.sup_beq (sub sup: String) (ss: Std.AssocList String Strings)
     simp [addDecl, cond_eq_ite]
     by_cases key == sup <;> simp_all
     . case pos h1 =>
-      simp [addSubSup, cond_eq_ite] at tail_ih
-      sorry
-    . case neg h1 =>
-      simp_all 
-      by_cases sub == sup
-      . case pos h2 =>
-        simp_all
-        sorry
-      . case neg h2 =>
-        simp [addSubSup, cond_eq_ite, h2]
-        simp_all
-        sorry 
+      simp [addSubSup, cond_eq_ite]
+      by_cases sup == sub <;> simp_all
+    . case neg h1 => 
+      split <;> simp_all
+      . case h_1 x heq =>
+        done
+      . case h_2 x heq =>
+        done
+
 
 end MWE8
