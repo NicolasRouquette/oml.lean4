@@ -11,6 +11,9 @@ theorem cond_eq_ite (c : Bool) (a b : α) : cond c a b = if c then a else b := b
 theorem cond_decide {α} (p : Prop) [Decidable p] (t e : α) : cond (decide p) t e = if p then t else e := by
   by_cases p <;> simp [*]
 
+@[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
+  (x == y) = decide (x = y) := rfl
+
 abbrev Strings := List String
 
 instance : Repr (Std.AssocList String Strings) where reprPrec s n := s.toList.repr n
@@ -61,8 +64,6 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   let ss' := addDecl ss sup
   addSubSup sub sup ss'
 
-#synth BEq String
-
 theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sub
 := by
@@ -80,18 +81,17 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
         simp [addBoth, addDecl] at tail_ih
         split at tail_ih 
         . case h_1 =>
-          by_cases key = sub <;> simp_all
+          by_cases key = sub <;> simp [*]
         . case h_2 x heq =>
           by_cases key = sub <;> simp_all
           simp [addSubSup, cond_eq_ite, h] at tail_ih
           apply tail_ih
     . case neg h =>
-      simp [addBoth, addDecl] at tail_ih
-      let ⟨ x, hx, he ⟩ := tail_ih
-      simp_all
-      simp [he]
-      simp [beq_eq_false_iff_ne, h]
-      done
+      split <;> simp_all
+      . case h_1 x heq =>
+        done
+      . case h_2 x heq =>
+        done
 
 theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sub
@@ -102,7 +102,7 @@ theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings)
     split <;> simp_all
   . case cons key value tail tail_ih =>
     simp [addBoth, addDecl]
-    by_cases key == sup <;> simp [*]
+    by_cases key == sup <;> simp_all
     . case pos =>
       simp [addSubSup, cond_eq_ite]
       by_cases sup == sub <;> simp [*]
@@ -118,24 +118,27 @@ theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings)
           simp [addSubSup, cond_eq_ite, h] at tail_ih
           apply tail_ih
     . case neg h =>
-      simp [addBoth, addDecl] at tail_ih
-      done
+      split <;> simp_all
+      . case h_1 x heq =>
+        done
+      . case h_2 x heq =>
+        done
 
 theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sup
 := by
   simp [addBoth]
   simp [addDecl]
-  induction ss <;> simp_all
+  induction ss <;> simp [*]
   . case nil =>
     simp [addSubSup, cond_eq_ite]
-    by_cases sup = sub <;> simp_all
+    by_cases sup = sub <;> simp [*]
   . case cons key value tail tail_ih =>
     simp [addDecl, cond_eq_ite]
-    by_cases key = sup <;> simp_all
+    by_cases key = sup <;> simp [*]
     . case pos h1 =>
       simp [addSubSup, cond_eq_ite] at tail_ih ⊢ 
-      by_cases sup = sub <;> simp_all
+      by_cases sup = sub <;> simp [*]
     . case neg h1 =>
       let ⟨ x, hx, he ⟩ := tail_ih
       split <;> simp_all
