@@ -1,5 +1,9 @@
 -- WIP Trying to proove addBoth.sub, addBoth.sup 
--- Verification that it is unecessary to import BEq and define beq_eq_eq
+-- Verification that it suffices to have the lemma: beq_eq_eq
+
+-- Tested with: 
+-- leanprover/lean4:nightly unchanged - Lean (version 4.0.0-nightly-2023-01-28, commit e37f209c1a2a, Release)
+
 import Std.Data.AssocList
 import Std.Data.List.Lemmas
 -- import Std.Classes.BEq
@@ -11,8 +15,9 @@ theorem cond_eq_ite (c : Bool) (a b : α) : cond c a b = if c then a else b := b
 theorem cond_decide {α} (p : Prop) [Decidable p] (t e : α) : cond (decide p) t e = if p then t else e := by
   by_cases p <;> simp [*]
 
--- @[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
---   (x == y) = decide (x = y) := rfl
+-- https://leanprover.zulipchat.com/#narrow/stream/270676-lean4/topic/Problems.20simplifying.20.20conditions.20with.20hypotheses/near/324212540
+@[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
+  (x == y) = decide (x = y) := rfl
 
 abbrev Strings := List String
 
@@ -89,7 +94,7 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
     . case neg h =>
       split <;> simp_all
       . case h_1 x heq =>
-        -- Given the tactic state:
+        -- Given the tactic state: (same as MWE8 addBoth.sub_eq path cons/neg/h_1)
         -- subsupkey: String
         -- value: Strings
         -- tail: Std.AssocList String Strings
@@ -103,7 +108,7 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
         sorry
 
       . case h_2 x heq =>
-        -- Given the tactic state:
+        -- Given the tactic state: (same as MWE8 addBoth.sub_eq path cons/neg/h_2)
         -- subsupkey: String
         -- value: Strings
         -- tail: Std.AssocList String Strings
@@ -193,7 +198,7 @@ theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings)
       let ⟨ x, hx, he ⟩ := tail_ih
       split <;> simp_all
       . case h_1 y heq =>
-        -- Given the tactic state:
+        -- Given the tactic state: (same as MWE8 addBoth.sup_eq path cons/neg/h_1)
         -- subsupkey: String
         -- value: Strings
         -- tail: Std.AssocList String Strings
@@ -210,7 +215,7 @@ theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings)
         sorry
 
       . case h_2 y heq =>
-        -- Given the tactic state:
+        -- Given the tactic state: (same as MWE8 addBoth.sup_eq path cons/neg/h_2)
         -- subsupkey: String
         -- value: Strings
         -- tail: Std.AssocList String Strings

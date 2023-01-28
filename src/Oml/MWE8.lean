@@ -1,5 +1,9 @@
 -- WIP Trying to proove addBoth.sub, addBoth.sup 
 -- Is it really necessary to import BEq and have beq_eq_eq?
+
+-- Tested with: 
+-- leanprover/lean4:nightly unchanged - Lean (version 4.0.0-nightly-2023-01-28, commit e37f209c1a2a, Release)
+
 import Std.Data.AssocList
 import Std.Data.List.Lemmas
 import Std.Classes.BEq
@@ -11,6 +15,7 @@ theorem cond_eq_ite (c : Bool) (a b : α) : cond c a b = if c then a else b := b
 theorem cond_decide {α} (p : Prop) [Decidable p] (t e : α) : cond (decide p) t e = if p then t else e := by
   by_cases p <;> simp [*]
 
+-- https://leanprover.zulipchat.com/#narrow/stream/270676-lean4/topic/Problems.20simplifying.20.20conditions.20with.20hypotheses/near/324212540
 @[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
   (x == y) = decide (x = y) := rfl
 
