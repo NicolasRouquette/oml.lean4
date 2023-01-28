@@ -2,6 +2,7 @@
 -- Why is there a significant difference in the proofs involving Eq vs. BEq?
 import Std.Data.AssocList
 import Std.Data.List.Lemmas
+import Std.Classes.BEq
 
 namespace MWE8
 
@@ -60,6 +61,8 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   let ss' := addDecl ss sup
   addSubSup sub sup ss'
 
+#synth BEq String
+
 theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sub
 := by
@@ -87,6 +90,7 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
       let ⟨ x, hx, he ⟩ := tail_ih
       simp_all
       simp [he]
+      simp [beq_eq_false_iff_ne, h]
       done
 
 theorem addBoth.sub_beq (sub sup: String) (ss: Std.AssocList String Strings) 
@@ -138,7 +142,7 @@ theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings)
       . case h_1 y heq =>
         done
       . case h_2 y heq =>
-        simp [h1, cond_eq_ite, h1] at heq
+        simp [h1, cond_eq_ite, beq_eq_false_iff_ne, h1] at heq
         done
 
 theorem addBoth.sup_beq (sub sup: String) (ss: Std.AssocList String Strings) 
@@ -162,6 +166,5 @@ theorem addBoth.sup_beq (sub sup: String) (ss: Std.AssocList String Strings)
         done
       . case h_2 x heq =>
         done
-
 
 end MWE8
