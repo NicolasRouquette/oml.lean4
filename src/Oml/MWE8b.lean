@@ -1,18 +1,18 @@
 -- WIP Trying to proove addBoth.sub, addBoth.sup 
--- Is it really necessary to import BEq and have beq_eq_eq?
+-- Verification that it is unecessary to import BEq and define beq_eq_eq
 import Std.Data.AssocList
 import Std.Data.List.Lemmas
-import Std.Classes.BEq
+-- import Std.Classes.BEq
 
-namespace MWE8
+namespace MWE8b
 
 theorem cond_eq_ite (c : Bool) (a b : α) : cond c a b = if c then a else b := by cases c <;> rfl
 
 theorem cond_decide {α} (p : Prop) [Decidable p] (t e : α) : cond (decide p) t e = if p then t else e := by
   by_cases p <;> simp [*]
 
-@[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
-  (x == y) = decide (x = y) := rfl
+-- @[simp] theorem beq_eq_eq [DecidableEq α] (x y : α) :
+--   (x == y) = decide (x = y) := rfl
 
 abbrev Strings := List String
 
@@ -282,4 +282,4 @@ theorem addBoth.sup_beq (sub sup: String) (ss: Std.AssocList String Strings)
         --     x.fst = sup
         sorry
 
-end MWE8
+end MWE8b
