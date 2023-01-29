@@ -83,14 +83,29 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   (other: Std.AssocList String Strings)
 : ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup other) ∧ x.fst = sub
 := by
- sorry
+ induction tail <;> simp_all
+ . case nil =>
+   induction other  <;> simp_all
+   . case cons key value other1 h1 =>
+     sorry
+ . case cons key value tail1 ih =>
+   induction other <;> simp_all
+   . case cons key value other1 h1 =>
+     sorry
 
-@[simp] theorem addSubSup.more.sup
+@[simp] theorem addSubSup.key_value
   (sub sup: String) 
   (tail: Std.AssocList String Strings)
   (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sup)
-  (other: Std.AssocList String Strings)
-: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup other) ∧ x.fst = sup
+: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons key value tail)) ∧ x.fst = sup
+:= by
+ sorry
+
+@[simp] theorem addSubSup.cons
+  (sub sup: String) 
+  (tail: Std.AssocList String Strings)
+  (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sup)
+: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons sup [] (Std.AssocList.cons key value tail))) ∧ x.fst = sup
 := by
  sorry
 
@@ -140,9 +155,5 @@ theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings)
       by_cases sup = sub <;> simp [*]
     . case neg h1 =>
       split <;> simp_all
-      . case h_1 =>
-        exact addSubSup.more.sup sub sup tail tail_ih (Std.AssocList.cons key value tail)
-      . case h_2 =>
-        exact addSubSup.more.sup sub sup (Std.AssocList.cons sup [] tail) tail_ih (Std.AssocList.cons sup [] (Std.AssocList.cons key value tail))
 
 end MWE9
