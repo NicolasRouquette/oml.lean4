@@ -1,4 +1,4 @@
--- WIP: only 3 lemmas to prove: addBoth2SubSup1, addSubSup.more.sub, addSubSup.more.sup
+-- WIP: only 1 lemma to prove: addSubSup.tail.sup
 
 -- Tested with: 
 -- leanprover/lean4:nightly unchanged - Lean (version 4.0.0-nightly-2023-01-28, commit e37f209c1a2a, Release)
@@ -52,7 +52,7 @@ def addSubSup: String → String → Std.AssocList String Strings → Std.AssocL
 | sub, sup, .nil            => .cons sub [sup] .nil
 | sub, sup, .cons a as tail => bif a = sub then .cons sub (as.insert sup) tail else .cons a as (addSubSup sub sup tail)
   
-theorem addSubSup.sub (sub sup: String) (ss: Std.AssocList String Strings): (addSubSup sub sup ss).contains sub
+@[simp] theorem addSubSup.sub (sub sup: String) (ss: Std.AssocList String Strings): (addSubSup sub sup ss).contains sub
 := by
   induction ss <;> simp_all
   . case cons key value tail tail_ih =>
@@ -64,17 +64,22 @@ theorem addSubSup.sub (sub sup: String) (ss: Std.AssocList String Strings): (add
       simp [h]
       apply tail_ih
 
+@[simp] theorem addSubSup.exists.sub (sub sup: String) (tail: Std.AssocList String Strings)
+: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sub
+:= by
+  induction tail <;> simp_all
+  . case cons key value t ih =>
+    simp [addSubSup, cond_eq_ite]
+    by_cases key = sub
+    . case pos h =>
+      simp [h]
+    . case neg h =>
+      simp [h]
+      apply ih
+
 def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList String Strings :=
   let ss' := addDecl ss sup
   addSubSup sub sup ss'
-
-@[simp] theorem addBoth2SubSup1
-  (sub sup: String) 
-  (tail: Std.AssocList String Strings)
-  (h: ∃ x, x ∈ Std.AssocList.toList (addBoth sub sup tail) ∧ x.fst = sub)
-: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sub
-:= by
-  sorry
 
 @[simp] theorem addSubSup.more.sub
   (sub sup: String) 
@@ -83,15 +88,26 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   (other: Std.AssocList String Strings)
 : ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup other) ∧ x.fst = sub
 := by
- induction tail <;> simp_all
- . case nil =>
-   induction other  <;> simp_all
-   . case cons key value other1 h1 =>
-     sorry
- . case cons key value tail1 ih =>
-   induction other <;> simp_all
-   . case cons key value other1 h1 =>
-     sorry
+  exact addSubSup.exists.sub sub sup other
+
+@[simp] theorem addSubSup.tail.sup
+  (sub sup: String) 
+  (tail: Std.AssocList String Strings)
+  (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sup)
+: ∃ x, x ∈ Std.AssocList.toList tail ∧ x.fst = sup
+:= by
+  induction tail <;> simp [*]
+  . case nil =>
+    rw [addSubSup] at h
+    let ⟨ x, p, eq ⟩ := h
+    sorry
+  . case cons key value t1 ih =>
+    by_cases key = sup <;> simp [*]
+    . case neg hs1 =>
+      simp [addSubSup, cond_eq_ite, hs1] at h
+      by_cases key = sub <;> simp_all
+      . case neg hs2 =>
+        sorry
 
 @[simp] theorem addSubSup.key_value
   (sub sup: String) 
@@ -99,7 +115,12 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sup)
 : ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons key value tail)) ∧ x.fst = sup
 := by
- sorry
+  simp [addSubSup, cond_eq_ite]
+  by_cases key = sub <;> simp_all
+  . case pos h1 =>
+    by_cases sub = sup <;> simp_all
+    . case neg =>
+      exact addSubSup.tail.sup sub sup tail h
 
 @[simp] theorem addSubSup.cons
   (sub sup: String) 
@@ -107,7 +128,26 @@ def addBoth (sub sup: String) (ss: Std.AssocList String Strings) : Std.AssocList
   (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sup)
 : ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons sup [] (Std.AssocList.cons key value tail))) ∧ x.fst = sup
 := by
- sorry
+  simp [addSubSup, cond_eq_ite]
+  by_cases sup = sub <;> simp_all
+
+@[simp] theorem addSubSup.cons2
+  (sub sup: String) 
+  (tail: Std.AssocList String Strings)
+  (h: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons sup [] tail)) ∧ x.fst = sup)
+: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup (Std.AssocList.cons sup [] (Std.AssocList.cons key value tail))) ∧ x.fst = sup
+:= by
+  simp [addSubSup, cond_eq_ite]
+  by_cases sup = sub <;> simp_all
+
+@[simp] theorem addBoth2SubSup1
+  (sub sup: String) 
+  (tail: Std.AssocList String Strings)
+  (h: ∃ x, x ∈ Std.AssocList.toList (addBoth sub sup tail) ∧ x.fst = sub)
+: ∃ x, x ∈ Std.AssocList.toList (addSubSup sub sup tail) ∧ x.fst = sub
+:= by
+  simp [addBoth] at h
+  exact addSubSup.more.sub sub sup (addDecl tail sup) h tail
 
 @[simp] theorem addBoth2SubSup2 
   (sub sup: String) 
@@ -126,17 +166,8 @@ theorem addBoth.sub_eq (sub sup: String) (ss: Std.AssocList String Strings)
   . case nil =>
     simp [addBoth, addDecl, addSubSup, cond_eq_ite]
     split <;> simp_all
-  . case cons key value tail tail_ih =>
+  . case cons =>
     simp [addBoth, addDecl]
-    by_cases key = sup <;> simp [*]
-    . case pos =>
-      exact addBoth2SubSup2 sub sup tail tail_ih (Std.AssocList.cons sup value tail)
-    . case neg =>
-      split <;> simp_all
-      . case h_1 =>
-        exact addBoth2SubSup2 sub sup tail tail_ih (Std.AssocList.cons key value tail)
-      . case h_2 =>
-        exact addBoth2SubSup2 sub sup tail tail_ih (Std.AssocList.cons sup [] (Std.AssocList.cons key value tail))
 
 theorem addBoth.sup_eq (sub sup: String) (ss: Std.AssocList String Strings) 
 : (addBoth sub sup ss).contains sup
